@@ -10,19 +10,14 @@
 
 #include "Components.h"
 
-enum TagFlags : uint8_t {
-    Enemy = 0b00000001,
-    Player = 0b00000010,
-    Bullet = 0b00000100,
-    Prop = 0b00001000,
-};
+
+using EntityIndex = std::size_t;
+using EntityId = std::size_t;
 
 class Entity final {
-    TagFlags m_flags;
-    bool m_active;
-    size_t m_id = 0;
-
 public:
+    size_t m_id;
+
     std::optional<CTransform> cTransform = std::nullopt;
     std::optional<CShape> cShape = std::nullopt;
     std::optional<CCollision> cCollison = std::nullopt;
@@ -31,7 +26,7 @@ public:
     std::optional<CLifespan> cLifespan = std::nullopt;
     std::optional<CFireCooldown> cFireCooldown = std::nullopt;
 
-    Entity(const TagFlags flags, const size_t id) : m_flags(flags), m_active(true), m_id(id) {};
+    Entity(const size_t id) : m_id(id) {};
 
     ~Entity() = default;
 

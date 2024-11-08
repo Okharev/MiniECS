@@ -29,7 +29,6 @@ class Game final {
 
 public:
     bool camera_shaking = false;
-
     SystemsConfigs m_configs;
     float m_spawnInterval = 5.0f;
     float m_cameraShakeInterval = 0.08f;

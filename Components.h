@@ -4,8 +4,20 @@
 
 #ifndef COMPONENTS_H
 #define COMPONENTS_H
+#include <variant>
+
 #include "SFML/Graphics/CircleShape.hpp"
 #include "Vec2.h"
+
+#include "Entity.h"
+
+#include <tuple>
+#include <unordered_map>
+
+struct CEnemy {};
+struct CPlayer {};
+struct CBullet {};
+struct CProp {};
 
 struct CTransform final {
     Vec2 position{0.0, 0.0};
@@ -61,5 +73,19 @@ struct CLifespan final {
 
     explicit CLifespan(const float lifeSpan) : remaining(lifeSpan), totalLifespan(lifeSpan) {};
 };
+
+using AnyComponents = std::variant<
+    std::unordered_map<EntityId, CBullet>,
+    std::unordered_map<EntityId, CCollision>,
+    std::unordered_map<EntityId, CEnemy>,
+    std::unordered_map<EntityId, CInput>,
+    std::unordered_map<EntityId, CLifespan>,
+    std::unordered_map<EntityId, CProp>,
+    std::unordered_map<EntityId, CScore>,
+    std::unordered_map<EntityId, CTransform>,
+    std::unordered_map<EntityId, CShape>,
+    std::unordered_map<EntityId, CFireCooldown>,
+    std::unordered_map<EntityId, CPlayer>
+>;
 
 #endif  // COMPONENTS_H

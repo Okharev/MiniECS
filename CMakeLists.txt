@@ -38,7 +38,9 @@ add_executable(main main.cpp
         Vec2.cpp
         Vec2.h
         Helpers.cpp
-        Helpers.h)
+        Helpers.h
+        ComponentRegistry.cpp
+        ComponentRegistry.h)
 set(CMAKE_CXX_STANDARD 20)
 target_link_libraries(main PRIVATE sfml-graphics ImGui-SFML::ImGui-SFML)
 target_compile_features(main PRIVATE cxx_std_20)

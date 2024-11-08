@@ -4,30 +4,52 @@
 
 #include "EntityManager.h"
 
-void EntityManager::update() {
-    for (const auto& e : m_toAdd) {
-        m_entities.push_back(e);
-        m_entitiesMap[e->getFlags()].push_back(e);
-    }
-    m_toAdd.clear();
+void EntityManager::deleteEntity(EntityIndex entityIndex)
+{
+    decltype(_entities) tmpEntities = {};
 
-    std::erase_if(m_entities, [](const std::shared_ptr<Entity>& e) { return !e->isActive(); });
-
-    for (auto& [key, value] : m_entitiesMap) {
-        std::erase_if(value, [](const std::shared_ptr<Entity>& e) { return !e->isActive(); });
+    for (EntityIndex i = 0; i < entityIndex; ++i) {
+        tmpEntities[i] = _entities[i];
     }
+
+    for (EntityIndex i = entityIndex + 1; i < MAX_ENTITIES; ++i) {
+        tmpEntities[i - 1] = _entities[i];
+    }
+
+    _entityCount--;
+
+    for (EntityIndex i = 0; i < MAX_ENTITIES; i++) {
+        _entities[i] = tmpEntities[i];
+    }
+
+    // compnents à faire ...
 }
 
-std::shared_ptr<Entity> EntityManager::addEntity(const TagFlags tag) {
-    const auto entity = std::make_shared<Entity>(tag, m_entitiescount++);
-    m_toAdd.push_back(entity);
+Entity* EntityManager::addEntity()
+{
+    for (const auto entityToDelete:_entitiesToDelete) {
+        auto entityIndex = FindEntityIndex(entityToDelete);
+        if ( entityIndex == INVALID_ENTITY_INDEX) {
+            continue;
+        }
+        deleteEntity(entityIndex);
+    }
+
+    auto entity = &_entities[_entityCount++];
+    entity->m_id = _entityCreated++;
     return entity;
 }
 
-EntityVec& EntityManager::getEntities() {
-    return m_entities;
+void EntityManager::markForDeletion(const EntityIndex entityId) {
+    _entitiesToDelete.push_back(entityId);
 }
 
-EntityVec& EntityManager::getEntities(const TagFlags flags) {
-    return m_entitiesMap[flags];
+EntityIndex EntityManager::FindEntityIndex(EntityId entityId) {
+    for (EntityIndex i = 0; i < _entityCount;i++) {
+        if (_entities[i].m_id == entityId) {
+            return i;
+        }
+    }
+
+    return INVALID_ENTITY_INDEX;
 }

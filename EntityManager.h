@@ -4,6 +4,7 @@
 
 #ifndef ENTITYMANAGER_H
 #define ENTITYMANAGER_H
+#include <array>
 #include <map>
 #include <memory>
 #include <unordered_map>
@@ -11,30 +12,27 @@
 
 #include "Entity.h"
 
-typedef std::vector<std::shared_ptr<Entity>> EntityVec;
-typedef std::unordered_map<TagFlags, std::vector<std::shared_ptr<Entity>>> EntityMapVec;
+auto constexpr MAX_ENTITIES = 2048;
+
+using EntityArray = std::array<Entity, MAX_ENTITIES>;
 
 class EntityManager final {
-    std::vector<std::shared_ptr<Entity>> m_entities;
-    std::unordered_map<TagFlags, EntityVec> m_entitiesMap;
-    EntityVec m_toAdd;
-    size_t m_entitiescount = 0;
+
+    static constexpr auto INVALID_ENTITY_INDEX = std::numeric_limits<EntityId>::max();
+
+    EntityArray _entities;
+    EntityIndex _entityCount;
+    EntityIndex _entityCreated;
+    std::vector<EntityId> _entitiesToDelete;
+
+
+    void deleteEntity(EntityIndex entityIndex);
 
 public:
-    void setCapacity() {
-        m_entities.reserve(2500);
-        for (auto& [tag, entities] : m_entitiesMap) {
-            entities.reserve(900);
-        }
-    }
-
-    void update();
-
-    std::shared_ptr<Entity> addEntity(TagFlags tag);
-
-    EntityVec& getEntities();
-
-    EntityVec& getEntities(TagFlags flags);
+    EntityManager() : _entities({}), _entityCount({}), _entityCreated(0), _entitiesToDelete({}) {}
+    Entity* addEntity();
+    void markForDeletion(const EntityIndex entityId);
+    EntityIndex FindEntityIndex(EntityId entityId);
 };
 
 #endif  // ENTITYMANAGER_H
