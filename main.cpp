@@ -1,13 +1,14 @@
 #include <fstream>
 #include <iostream>
 
-#include <imgui-SFML.h>
-#include <imgui.h>
-#include <imgui_internal.h>
+// #include <imgui-SFML.h>
+// #include <imgui.h>
+// #include <imgui_internal.h>
 #include <SFML/Graphics.hpp>
 #include <optional>
 #include <functional>
 
+#include "Components.h"
 #include "ECSManager.h"
 #include "Game.h"
 #include "Vec2.h"
@@ -53,20 +54,20 @@ int main() {
 
     auto playerOne = ecs.addEntity();
     auto playerTwo = ecs.addEntity();
+    auto playerThree = ecs.addEntity();
 
-    ecs.m_componentRegistry.Register<CScore>(playerOne->m_id, { 69 });
-    ecs.m_componentRegistry.Register<CScore>(playerTwo->m_id, { 42 });
-
-    auto testOne = ecs.m_componentRegistry.Get<CScore>(playerOne->m_id);
-    auto testTwo = ecs.m_componentRegistry.Get<CScore>(playerOne->m_id);
+    ecs.m_componentRegistry.Register<CScore, CTransform>(playerOne->m_id, {69}, {});
+    ecs.m_componentRegistry.Register<CScore, CTransform>(playerTwo->m_id, {42}, {});
+    // No score on purpose to test query
+    ecs.m_componentRegistry.Register<CTransform>(playerThree->m_id, {});
 
     auto query = ecs.QueryComponents<CScore, CTransform>();
 
-    // for (auto [entityId, components]: query) {
-    //     auto score = std::get<0>(components);
-    //     auto transform = std::get<1>(components);
-    //     printf("%i %f\n", score->value, transform->direction.x);
-    // }
+    for (auto [entityId, components]: query) {
+        auto score = std::get<0>(components);
+        auto transform = std::get<1>(components);
+        printf("%i %f\n", score->value, transform->direction.x);
+    }
 
     // auto game = Game();
 

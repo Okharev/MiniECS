@@ -9,6 +9,7 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include <iostream>
 
 #include "ComponentRegistry.h"
 #include "Entity.h"
@@ -42,6 +43,27 @@ public:
         std::unordered_map<EntityId, std::tuple<T*...>> query;
 
         for (std::size_t i = 0; i < _entityCount; i++) {
+            auto entityQuery = m_componentRegistry.Query<T...>(_entities[i].m_id);
+            bool hasAnyPointerNull = false;
+
+            /**
+             * Find if any components is null before adding first
+             */
+            const auto IsValidComponent = [&](auto&& component) {
+                if (component == nullptr) {
+                    hasAnyPointerNull = true;
+                }
+            };
+
+            std::apply([&](auto&&... components) {
+                    (IsValidComponent(components), ...);
+                },
+                entityQuery);
+
+            if (hasAnyPointerNull) {
+                continue;
+            }
+
             query[_entities[i].m_id] = m_componentRegistry.Query<T...>(_entities[i].m_id);
         }
 

@@ -55,6 +55,6 @@ struct CLifespan final {
 };
 
 template<typename... TComponents>
-using Component = std::tuple<TComponents...>;
+using Components = std::tuple<std::unordered_map<EntityId, TComponents>...>;
 
 #endif  // COMPONENTS_H
