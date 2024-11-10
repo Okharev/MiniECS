@@ -4,7 +4,7 @@
 
 #ifndef GAME_H
 #define GAME_H
-#include "EntityManager.h"
+#include "ECSManager.h"
 #include "SFML/Graphics/Font.hpp"
 #include "SFML/Graphics/RenderWindow.hpp"
 #include "SFML/Graphics/Text.hpp"
@@ -17,7 +17,7 @@ struct SystemsConfigs final {
 
 class Game final {
     sf::RenderWindow m_window;
-    EntityManager m_entityManager;
+    ECSManager m_entityManager;
     sf::Font m_font;
     sf::Text m_text;
     sf::Time m_frameTime;
@@ -33,7 +33,7 @@ public:
     float m_spawnInterval = 5.0f;
     float m_cameraShakeInterval = 0.08f;
 
-    Game() : m_entityManager(EntityManager()) {};
+    Game() : m_entityManager(ECSManager()) {};
 
     void init();
     void run();

@@ -10,13 +10,14 @@
 #include <unordered_map>
 #include <vector>
 
+#include "ComponentRegistry.h"
 #include "Entity.h"
 
 auto constexpr MAX_ENTITIES = 2048;
 
 using EntityArray = std::array<Entity, MAX_ENTITIES>;
 
-class EntityManager final {
+class ECSManager {
 
     static constexpr auto INVALID_ENTITY_INDEX = std::numeric_limits<EntityId>::max();
 
@@ -29,10 +30,23 @@ class EntityManager final {
     void deleteEntity(EntityIndex entityIndex);
 
 public:
-    EntityManager() : _entities({}), _entityCount({}), _entityCreated(0), _entitiesToDelete({}) {}
+    ComponentRegistry m_componentRegistry;
+    ECSManager() : _entityCount(0), _entityCreated(0) {
+    }
     Entity* addEntity();
-    void markForDeletion(const EntityIndex entityId);
-    EntityIndex FindEntityIndex(EntityId entityId);
+    void markForDeletion(EntityIndex entityId);
+    EntityIndex FindEntityIndex(EntityId entityId) const;
+
+    template<typename ... T>
+    auto QueryComponents() {
+        std::unordered_map<EntityId, std::tuple<T*...>> query;
+
+        for (std::size_t i = 0; i < _entityCount; i++) {
+            query[_entities[i].m_id] = m_componentRegistry.Query<T...>(_entities[i].m_id);
+        }
+
+        return query;
+    }
 };
 
 #endif  // ENTITYMANAGER_H

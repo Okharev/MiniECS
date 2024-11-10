@@ -29,10 +29,10 @@ FetchContent_MakeAvailable(IMGUI-SFML)
 add_executable(main main.cpp
         Entity.cpp
         Entity.h
-        EntityManager.cpp
-        EntityManager.h
-        Game.cpp
-        Game.h
+        ECSManager.cpp
+        ECSManager.h
+        # Game.cpp
+        # Game.h
         Components.cpp
         Components.h
         Vec2.cpp

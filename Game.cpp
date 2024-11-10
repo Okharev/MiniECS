@@ -13,7 +13,6 @@
 #include "SFML/Window/Event.hpp"
 
 void Game::init() {
-    m_entityManager.setCapacity();
     m_window.create(sf::VideoMode(2440, 1560), "UltraAdvancedGeometryWarz");
 
     if (!ImGui::SFML::Init(m_window)) {
@@ -31,8 +30,6 @@ void Game::run() {
     m_text.setPosition(10.0f, 0.0f);
 
     while (m_running) {
-        m_entityManager.update();
-
         sf::Event event;
         while (m_window.pollEvent(event)) {
             ImGui::SFML::ProcessEvent(m_window, event);
@@ -143,7 +140,7 @@ void Game::sFireWeapon() {
     }
 }
 
-void Game::sMovement() {
+void Game::sMovement(EntityId entityId, CMovement& movement) {
     for (const auto& entity : m_entityManager.getEntities()) {
         if (!entity->cTransform.has_value() || !entity->cShape.has_value())
             continue;
