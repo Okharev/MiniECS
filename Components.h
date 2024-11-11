@@ -54,7 +54,10 @@ struct CLifespan final {
     float totalLifespan{};
 };
 
+template <typename TComponent>
+using Component = std::unordered_map<EntityId, TComponent>;
+
 template<typename... TComponents>
-using Components = std::tuple<std::unordered_map<EntityId, TComponents>...>;
+using Components = std::tuple<Component<TComponents>...>;
 
 #endif  // COMPONENTS_H

@@ -6,7 +6,7 @@
 
 void ECSManager::deleteEntity(EntityIndex entityIndex)
 {
-    decltype(_entities) tmpEntities = {};
+    decltype(_entities) tmpEntities;
 
     // components à faire ...
     m_componentRegistry.Unregister(_entities[entityIndex].m_id);
@@ -15,7 +15,7 @@ void ECSManager::deleteEntity(EntityIndex entityIndex)
         tmpEntities[i] = _entities[i];
     }
 
-    for (EntityIndex i = entityIndex + 1; i < MAX_ENTITIES; ++i) {
+    for (EntityIndex i = entityIndex + 1; i < _entityCount; ++i) {
         tmpEntities[i - 1] = _entities[i];
     }
 
@@ -34,6 +34,12 @@ Entity* ECSManager::addEntity()
             continue;
         }
         deleteEntity(entityIndex);
+    }
+
+    _entitiesToDelete.clear();
+
+    if (_entityCount >= MAX_ENTITIES) {
+        return nullptr;
     }
 
     const auto entity = &_entities[_entityCount++];
