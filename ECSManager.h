@@ -16,39 +16,36 @@
 
 auto constexpr MAX_ENTITIES = 2048;
 
-using EntityArray = std::array<Entity, MAX_ENTITIES>;
-
 template <typename... TComponents>
 using ECSQuery = std::unordered_map<EntityId, std::tuple<TComponents*...>>;
 
 class ECSManager {
 
-    static constexpr auto INVALID_ENTITY_INDEX = std::numeric_limits<EntityId>::max();
-
-    EntityArray _entities;
-    EntityIndex _entityCount;
+    std::unordered_map<EntityId, Entity> _entities;
     EntityIndex _entityCreated;
     std::vector<EntityId> _entitiesToDelete;
 
    private:
-    void deleteEntity(EntityIndex entityIndex);
+    void deleteEntity(EntityId entityIndex);
 
    public:
     ComponentRegistry m_componentRegistry;
 
    public:
-    ECSManager() : _entityCount(0), _entityCreated(0) {}
+    ECSManager() : _entityCreated(0) {
+        _entities.reserve( MAX_ENTITIES );
+    }
 
-    Entity* addEntity();
-    void markForDeletion(EntityIndex entityId);
-    EntityIndex FindEntityIndex(EntityId entityId) const;
+    Entity& addEntity();
+    void markForDeletion(EntityId entityId);
 
     template<typename ... TComponents>
     auto QueryComponents() -> ECSQuery<TComponents...> {
         ECSQuery<TComponents...> query;
 
-        for (std::size_t i = 0; i < _entityCount; i++) {
-            auto entityQuery = m_componentRegistry.Query<TComponents...>(_entities[i].m_id);
+        for (auto&& entity : _entities) {
+            const auto entityId = entity.second.m_id;
+            auto entityQuery = m_componentRegistry.Query<TComponents...>(entityId);
             bool hasAnyPointerNull = false;
 
             /**
@@ -69,7 +66,7 @@ class ECSManager {
                 continue;
             }
 
-            query[_entities[i].m_id] = m_componentRegistry.Query<TComponents...>(_entities[i].m_id);
+            query[entityId] = m_componentRegistry.Query<TComponents...>(entityId);
         }
 
         return query;
@@ -77,30 +74,7 @@ class ECSManager {
 
     template<typename ... TComponents>
     auto QueryComponents(ECSQuery<TComponents...> &query) {
-        for (std::size_t i = 0; i < _entityCount; i++) {
-            auto entityQuery = m_componentRegistry.Query<TComponents...>(_entities[i].m_id);
-            bool hasAnyPointerNull = false;
-
-            /**
-             * Find if any components is null before adding first
-             */
-            const auto IsValidComponent = [&](auto&& component) {
-                if (component == nullptr) {
-                    hasAnyPointerNull = true;
-                }
-            };
-
-            std::apply([&](auto&&... components) {
-                    (IsValidComponent(components), ...);
-                },
-                entityQuery);
-
-            if (hasAnyPointerNull) {
-                continue;
-            }
-
-            query[_entities[i].m_id] = m_componentRegistry.Query<TComponents...>(_entities[i].m_id);
-        }
+        query = QueryComponents<TComponents...>();
     }
 };
 
