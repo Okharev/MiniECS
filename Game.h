@@ -5,6 +5,8 @@
 #ifndef GAME_H
 #define GAME_H
 #include <bits/stdc++.h>
+#include <initializer_list>
+#include <type_traits>
 #include "ECSManager.h"
 #include "SFML/Graphics/Font.hpp"
 #include "SFML/Graphics/RenderWindow.hpp"
@@ -16,65 +18,83 @@ enum GameState {
     Closing,
 };
 
-using PrioritizedFunc = std::pair<std::function<void(ECSManager&)>, std::uint8_t>;
+struct SystemFunction {
+    std::function<void(ECSManager& ecsManager)> callback;
+    int priority;
+
+    auto operator()(ECSManager& ecsManager) const {
+        callback(ecsManager);    
+    }
+};
+
+template <typename... TComponents>
+struct SystemFunctionSignature;
+
+// Spécifie les signatures de tes fonctions qui sont possible d'écrire ici
+// Genre si tu veux ajouter un entier après ECSQuery
+template <typename... TComponents>
+struct SystemFunctionSignature<std::function<void(ECSQuery<TComponents...>&)>> {
+    using ECSQuery_T = ECSQuery<TComponents...>;
+};
+
+template <typename... TComponents>
+struct SystemFunctionSignature<void(*)(ECSQuery<TComponents...>&)> {
+    using ECSQuery_T = ECSQuery<TComponents...>;
+};
 
 class Game final {
     ECSManager _ecs;
 
-    std::vector<PrioritizedFunc> _setupSystems;
-    std::vector<PrioritizedFunc> _runningSystems;
-    std::vector<PrioritizedFunc> _closingSystems;
+    std::vector<SystemFunction> _setupSystems;
+    std::vector<SystemFunction> _runningSystems;
+    std::vector<SystemFunction> _closingSystems;
 
-    Game();
+    Game() = default;
 
    public:
     static Game New() { return Game{}; }
 
-    template <GameState TGameState>
-    Game& Register(std::function<void(ECSManager&)> function, uint8_t priority) {
-        if constexpr (TGameState == GameState::Running) {
-            _setupSystems.emplace_back(std::make_pair(function, priority));
-            std::sort(_setupSystems.begin(), _setupSystems.end(), [](PrioritizedFunc& one, PrioritizedFunc& two) { return one.second > two.second; });
-        } else if constexpr (TGameState == GameState::Running) {
-            _runningSystems.emplace_back(std::make_pair(function, priority));
-            std::sort(_setupSystems.begin(), _setupSystems.end(), [](PrioritizedFunc& one, PrioritizedFunc& two) { return one.second > two.second; });
-        } else if constexpr (TGameState == GameState::Closing) {
-            _closingSystems.emplace_back(std::make_pair(function, priority));
-            std::sort(_setupSystems.begin(), _setupSystems.end(), [](PrioritizedFunc& one, PrioritizedFunc& two) { return one.second > two.second; });
-        }
+    template <GameState TGameState, typename TFunction>
+    requires(std::is_function_v<std::remove_pointer_t<TFunction>> or std::is_function_v<TFunction>)
+    Game& Register(TFunction function, int priority) {
+        auto callback = [=](ECSManager& ecsManager) {
+            using ECSQuery_T = SystemFunctionSignature<TFunction>::ECSQuery_T;
 
+            ECSQuery_T ecsQuery;
+            ecsManager.QueryComponents(ecsQuery);
+            function(ecsQuery);
+        };
+
+        if constexpr (TGameState == GameState::Setup) {
+            _setupSystems.push_back({callback, priority});
+        } else if constexpr (TGameState == GameState::Running) {
+            _runningSystems.push_back({callback, priority});
+        } else if constexpr (TGameState == GameState::Closing) {
+            _closingSystems.push_back({callback, priority});
+        }
+        
         return *this;
     }
 
-    template <GameState TGameState, std::ranges::forward_range Iterable>
-    requires std::same_as<std::ranges::range_value_t<Iterable>, PrioritizedFunc> Game& RegisterRange(Iterable& iterFuncs) {
-        if constexpr (TGameState == GameState::Running) {
-            _setupSystems.insert(_setupSystems.end(), iterFuncs.begin(), iterFuncs.end());
-            std::sort(_setupSystems.begin(), _setupSystems.end(), [](PrioritizedFunc& one, PrioritizedFunc& two) { return one.second > two.second; });
-        } else if constexpr (TGameState == GameState::Running) {
-            _runningSystems.insert(_runningSystems.end(), iterFuncs.begin(), iterFuncs.end());
-            std::sort(_runningSystems.begin(), _runningSystems.end(), [](PrioritizedFunc& one, PrioritizedFunc& two) { return one.second > two.second; });
-        } else if constexpr (TGameState == GameState::Closing) {
-            _closingSystems.insert(_closingSystems.end(), iterFuncs.begin(), iterFuncs.end());
-            std::sort(_closingSystems.begin(), _closingSystems.end(), [](PrioritizedFunc& one, PrioritizedFunc& two) { return one.second > two.second; });
-        }
-
+    template <GameState TGameState, typename... TFunctions>
+    Game& RegisterRange(std::pair<TFunctions, int>... functions) {
+        (Register<TGameState>(std::get<TFunctions>(functions), std::get<int>(functions)), ...);
         return *this;
     }
 
     void Run() {
         for (auto&& func : _setupSystems) {
-            func.first(_ecs);
+            func(_ecs);
         }
 
         while (true) {
-            for (auto&& func : _setupSystems) {
-                func.first(_ecs);
+            for (auto&& func : _runningSystems) {
+                func(_ecs);
             }
         }
 
-        for (auto&& func : _runningSystems) {
-            func.first(_ecs);
+        for (auto&& func : _closingSystems) {
+            func(_ecs);
         }
     }
 };

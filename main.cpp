@@ -10,6 +10,7 @@
 
 #include "Components.h"
 #include "ECSManager.h"
+#include "Entity.h"
 #include "Game.h"
 #include "Vec2.h"
 
@@ -17,27 +18,29 @@ constexpr uint8_t FONT_SIZE = 14;
 constexpr float SCREEN_HEIGHT = 1080.0f;
 constexpr float SCREEN_WIDTH = 1920.0f;
 
-void sSpawnPlayer(ECSManager& query) {
-    printf("Spawning player");
+void sSpawnPlayer(ECSQuery<CPlayer>& ecsQuery) {
+    printf("Spawning player\n");
 }
 
-void sMovePlayer(ECSManager& query) {
-    printf("Spawning player");
+void sMovePlayer(ECSQuery<CPlayer>& ecsQuery) {
+    printf("Moving player\n");
 }
 
-void sMoveEnemy(ECSManager& query) {
-    printf("Spawning player");
+void sMoveEnemy(ECSQuery<CEnemy> &ecsQuery) {
+    printf("Moving enemy\n");
 }
 
-void sCleanResources(ECSManager& query) {
-    printf("saving game");
+void sCleanResources(ECSQuery<CPlayer> &ecsQuery) {
+    printf("saving game\n");
 }
 
 int main() {
 
     auto game = Game::New()
-        .Register<GameState::Setup>(sSpawnPlayer, 0)
-        .RegisterRange<GameState::Running>((PrioritizedFunc []){ std::make_pair(sMoveEnemy, 0), std::make_pair(sMovePlayer, 0) });
+                    .Register<GameState::Setup>(sSpawnPlayer, 0)
+                    .Register<GameState::Closing>(sCleanResources, 0)
+                    .RegisterRange<GameState::Running>(std::make_pair(sMovePlayer, 1), std::make_pair(sMoveEnemy, 0));
+    game.Run();
 
     return EXIT_SUCCESS;
 }

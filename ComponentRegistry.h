@@ -52,12 +52,13 @@ class ComponentRegistry {
     T1* Get(EntityId entityId) {
 
         auto& hashmap = std::get<Component<T1>>(m_components);
+        const auto result = hashmap.find(entityId);
 
-        if (hashmap.find(entityId) == hashmap.end()) {
+        if (result == hashmap.end()) {
             return nullptr;
         }
     
-        return &hashmap[entityId];
+        return &result->second;
     }
 
     template<typename ... T>
