@@ -4,54 +4,79 @@
 
 #ifndef GAME_H
 #define GAME_H
+#include <bits/stdc++.h>
 #include "ECSManager.h"
 #include "SFML/Graphics/Font.hpp"
 #include "SFML/Graphics/RenderWindow.hpp"
 #include "SFML/Graphics/Text.hpp"
 
-struct SystemsConfigs final {
-    bool m_movementDisabled = false;
-    bool m_renderDisabled = false;
-    bool m_collisionDisabled = false;
+enum GameState {
+    Setup,
+    Running,
+    Closing,
 };
 
+using PrioritizedFunc = std::pair<std::function<void(ECSManager&)>, std::uint8_t>;
+
 class Game final {
-    sf::RenderWindow m_window;
-    ECSManager m_entityManager;
-    sf::Font m_font;
-    sf::Text m_text;
-    sf::Time m_frameTime;
-    sf::Clock m_clock;
-    sf::Clock m_enemySpawnClock;
-    sf::Clock m_cameraShake;
-    int m_score = 0;
-    bool m_running = true;
+    ECSManager _ecs;
 
-public:
-    bool camera_shaking = false;
-    SystemsConfigs m_configs;
-    float m_spawnInterval = 5.0f;
-    float m_cameraShakeInterval = 0.08f;
+    std::vector<PrioritizedFunc> _setupSystems;
+    std::vector<PrioritizedFunc> _runningSystems;
+    std::vector<PrioritizedFunc> _closingSystems;
 
-    Game() : m_entityManager(ECSManager()) {};
+    Game();
 
-    void init();
-    void run();
+   public:
+    static Game New() { return Game{}; }
 
-    void sCameraShake();
-    void sSetupPlayer();
-    void sFireWeapon();
-    void sMovement();
-    void sUserInput();
-    void sRender();
-    void sGUI();
-    void sEnemyBounce();
-    void sPlayerBoundChecking();
-    void sEnemySpawner();
-    void sSplitEnemy();
-    void sTickTimers();
-    void sFadeProps();
-    void sCollision();
+    template <GameState TGameState>
+    Game& Register(std::function<void(ECSManager&)> function, uint8_t priority) {
+        if constexpr (TGameState == GameState::Running) {
+            _setupSystems.emplace_back(std::make_pair(function, priority));
+            std::sort(_setupSystems.begin(), _setupSystems.end(), [](PrioritizedFunc& one, PrioritizedFunc& two) { return one.second > two.second; });
+        } else if constexpr (TGameState == GameState::Running) {
+            _runningSystems.emplace_back(std::make_pair(function, priority));
+            std::sort(_setupSystems.begin(), _setupSystems.end(), [](PrioritizedFunc& one, PrioritizedFunc& two) { return one.second > two.second; });
+        } else if constexpr (TGameState == GameState::Closing) {
+            _closingSystems.emplace_back(std::make_pair(function, priority));
+            std::sort(_setupSystems.begin(), _setupSystems.end(), [](PrioritizedFunc& one, PrioritizedFunc& two) { return one.second > two.second; });
+        }
+
+        return *this;
+    }
+
+    template <GameState TGameState, std::ranges::forward_range Iterable>
+    requires std::same_as<std::ranges::range_value_t<Iterable>, PrioritizedFunc> Game& RegisterRange(Iterable& iterFuncs) {
+        if constexpr (TGameState == GameState::Running) {
+            _setupSystems.insert(_setupSystems.end(), iterFuncs.begin(), iterFuncs.end());
+            std::sort(_setupSystems.begin(), _setupSystems.end(), [](PrioritizedFunc& one, PrioritizedFunc& two) { return one.second > two.second; });
+        } else if constexpr (TGameState == GameState::Running) {
+            _runningSystems.insert(_runningSystems.end(), iterFuncs.begin(), iterFuncs.end());
+            std::sort(_runningSystems.begin(), _runningSystems.end(), [](PrioritizedFunc& one, PrioritizedFunc& two) { return one.second > two.second; });
+        } else if constexpr (TGameState == GameState::Closing) {
+            _closingSystems.insert(_closingSystems.end(), iterFuncs.begin(), iterFuncs.end());
+            std::sort(_closingSystems.begin(), _closingSystems.end(), [](PrioritizedFunc& one, PrioritizedFunc& two) { return one.second > two.second; });
+        }
+
+        return *this;
+    }
+
+    void Run() {
+        for (auto&& func : _setupSystems) {
+            func.first(_ecs);
+        }
+
+        while (true) {
+            for (auto&& func : _setupSystems) {
+                func.first(_ecs);
+            }
+        }
+
+        for (auto&& func : _runningSystems) {
+            func.first(_ecs);
+        }
+    }
 };
 
 #endif  // GAME_H

@@ -20,7 +20,7 @@ void Game::init() {
     }
 }
 
-void Game::run() {
+// void Game::run() {
     sSetupPlayer();
 
     m_font.loadFromFile(R"(C:\Users\Okharev\CLionProjects\ECSEngine\font\Ubuntu-Medium.ttf)");
