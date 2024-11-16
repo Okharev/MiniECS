@@ -26,22 +26,22 @@ class ComponentRegistry {
 
     template <class T1>
     requires(is_in_tuple_v<Component<T1>, decltype(m_components)>)
-    void Register(EntityId entityId, T1 component) {
+    inline void Register(EntityId entityId, T1 component) {
         std::get<Component<T1>>(m_components)[entityId] = component;
     }
 
     template <class... T>
-    void Register(EntityId entityId, T&&... components) {
+    inline void Register(EntityId entityId, T&&... components) {
         (Register(entityId, components), ...);
     }
 
     template <class T1>
     requires(is_in_tuple_v<Component<T1>, decltype(m_components)>)
-    void Unregister(EntityId entityId, T1 component) {
+    inline void Unregister(EntityId entityId, T1 component) {
         std::get<Component<T1>>(m_components).erase(entityId);
     }
 
-    void Unregister(EntityId entityId) {
+    inline void Unregister(EntityId entityId) {
         std::apply([&](auto&&... components) {
             (components.erase(entityId), ...);
         }, m_components);
@@ -49,7 +49,7 @@ class ComponentRegistry {
 
     template <class T1>
     requires(is_in_tuple_v<Component<T1>, decltype(m_components)>)
-    T1* Get(EntityId entityId) {
+    inline T1* Get(EntityId entityId) {
 
         auto& hashmap = std::get<Component<T1>>(m_components);
         const auto result = hashmap.find(entityId);
@@ -62,7 +62,7 @@ class ComponentRegistry {
     }
 
     template<typename ... T>
-    auto Query(EntityId entityId) {
+    inline auto Query(EntityId entityId) {
         return std::tuple<T*...>(Get<T>(entityId) ...);
     }
 };

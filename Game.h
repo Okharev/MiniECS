@@ -47,33 +47,31 @@ class Game final {
     Game() = default;
 
    public:
-    static Game New() { return Game{}; }
+    inline static Game New() { return Game{}; }
 
     template <GameState TGameState, typename Function>
-    Game& Register(Function&& function, int priority) {
-        std::function stdfunction = function;
-
-        using TECSQuery = SystemFunctionSignature<decltype(stdfunction)>::TECSQuery;
+    inline Game& Register(Function&& function, int priority) {
+        using TECSQuery = SystemFunctionSignature<decltype(std::function{function})>::TECSQuery;
 
         auto callback = [=](ECSManager& ecsManager) {
             TECSQuery ecsQuery;
             ecsManager.QueryComponents(ecsQuery);
-            stdfunction(ecsQuery);
+            function(ecsQuery);
         };
 
         if constexpr (TGameState == GameState::Setup) {
             _setupSystems.push_back({callback, priority});
-            std::sort(_setupSystems.begin(), _setupSystems.end(), [](const SystemFunction& systemFunction1, const SystemFunction& systemFunction2) {
+            std::ranges::sort(_setupSystems, [](const SystemFunction& systemFunction1, const SystemFunction& systemFunction2) {
                 return systemFunction1.priority > systemFunction2.priority;
             });
         } else if constexpr (TGameState == GameState::Running) {
             _runningSystems.push_back({callback, priority});
-            std::sort(_runningSystems.begin(), _runningSystems.end(), [](const SystemFunction& systemFunction1, const SystemFunction& systemFunction2) {
+            std::ranges::sort(_runningSystems, [](const SystemFunction& systemFunction1, const SystemFunction& systemFunction2) {
                 return systemFunction1.priority > systemFunction2.priority;
             });
         } else if constexpr (TGameState == GameState::Closing) {
             _closingSystems.push_back({callback, priority});
-            std::sort(_closingSystems.begin(), _closingSystems.end(), [](const SystemFunction& systemFunction1, const SystemFunction& systemFunction2) {
+            std::ranges::sort(_closingSystems, [](const SystemFunction& systemFunction1, const SystemFunction& systemFunction2) {
                 return systemFunction1.priority > systemFunction2.priority;
             });
         }
@@ -82,12 +80,12 @@ class Game final {
     }
 
     template <GameState TGameState, typename... TFunctions>
-    Game& RegisterRange(std::pair<TFunctions, int>&&... functions) {
+    inline Game& RegisterRange(std::pair<TFunctions, int>&&... functions) {
         (Register<TGameState>(std::get<TFunctions>(functions), std::get<int>(functions)), ...);
         return *this;
     }
 
-    void Run() {
+    inline void Run() {
         for (auto&& func : _setupSystems) {
             func(_ecs);
         }

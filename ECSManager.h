@@ -32,7 +32,7 @@ class ECSManager {
     ComponentRegistry m_componentRegistry;
 
    public:
-    ECSManager() : _entityCreated(0) {
+    inline ECSManager() : _entityCreated(0) {
         _entities.reserve( MAX_ENTITIES );
     }
 
@@ -40,7 +40,7 @@ class ECSManager {
     void markForDeletion(EntityId entityId);
 
     template<typename ... TComponents>
-    auto QueryComponents() -> ECSQuery<TComponents...> {
+    inline auto QueryComponents() -> ECSQuery<TComponents...> {
         ECSQuery<TComponents...> query;
 
         for (auto&& entity : _entities) {
@@ -73,7 +73,7 @@ class ECSManager {
     }
 
     template<typename ... TComponents>
-    auto QueryComponents(ECSQuery<TComponents...> &query) {
+    inline auto QueryComponents(ECSQuery<TComponents...> &query) {
         query = QueryComponents<TComponents...>();
     }
 };
