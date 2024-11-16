@@ -34,12 +34,7 @@ struct SystemFunctionSignature;
 // Genre si tu veux ajouter un entier après ECSQuery
 template <typename... TComponents>
 struct SystemFunctionSignature<std::function<void(ECSQuery<TComponents...>&)>> {
-    using ECSQuery_T = ECSQuery<TComponents...>;
-};
-
-template <typename... TComponents>
-struct SystemFunctionSignature<void(*)(ECSQuery<TComponents...>&)> {
-    using ECSQuery_T = ECSQuery<TComponents...>;
+    using TECSQuery = ECSQuery<TComponents...>;
 };
 
 class Game final {
@@ -54,30 +49,40 @@ class Game final {
    public:
     static Game New() { return Game{}; }
 
-    template <GameState TGameState, typename TFunction>
-    requires(std::is_function_v<std::remove_pointer_t<TFunction>> or std::is_function_v<TFunction>)
-    Game& Register(TFunction function, int priority) {
-        auto callback = [=](ECSManager& ecsManager) {
-            using ECSQuery_T = SystemFunctionSignature<TFunction>::ECSQuery_T;
+    template <GameState TGameState, typename Function>
+    Game& Register(Function&& function, int priority) {
+        std::function stdfunction = function;
 
-            ECSQuery_T ecsQuery;
+        using TECSQuery = SystemFunctionSignature<decltype(stdfunction)>::TECSQuery;
+
+        auto callback = [=](ECSManager& ecsManager) {
+            TECSQuery ecsQuery;
             ecsManager.QueryComponents(ecsQuery);
-            function(ecsQuery);
+            stdfunction(ecsQuery);
         };
 
         if constexpr (TGameState == GameState::Setup) {
             _setupSystems.push_back({callback, priority});
+            std::sort(_setupSystems.begin(), _setupSystems.end(), [](const SystemFunction& systemFunction1, const SystemFunction& systemFunction2) {
+                return systemFunction1.priority > systemFunction2.priority;
+            });
         } else if constexpr (TGameState == GameState::Running) {
             _runningSystems.push_back({callback, priority});
+            std::sort(_runningSystems.begin(), _runningSystems.end(), [](const SystemFunction& systemFunction1, const SystemFunction& systemFunction2) {
+                return systemFunction1.priority > systemFunction2.priority;
+            });
         } else if constexpr (TGameState == GameState::Closing) {
             _closingSystems.push_back({callback, priority});
+            std::sort(_closingSystems.begin(), _closingSystems.end(), [](const SystemFunction& systemFunction1, const SystemFunction& systemFunction2) {
+                return systemFunction1.priority > systemFunction2.priority;
+            });
         }
-        
+
         return *this;
     }
 
     template <GameState TGameState, typename... TFunctions>
-    Game& RegisterRange(std::pair<TFunctions, int>... functions) {
+    Game& RegisterRange(std::pair<TFunctions, int>&&... functions) {
         (Register<TGameState>(std::get<TFunctions>(functions), std::get<int>(functions)), ...);
         return *this;
     }

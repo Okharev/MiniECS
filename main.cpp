@@ -39,7 +39,10 @@ int main() {
     auto game = Game::New()
                     .Register<GameState::Setup>(sSpawnPlayer, 0)
                     .Register<GameState::Closing>(sCleanResources, 0)
-                    .RegisterRange<GameState::Running>(std::make_pair(sMovePlayer, 1), std::make_pair(sMoveEnemy, 0));
+                    .RegisterRange<GameState::Running>(std::make_pair(sMovePlayer, 1), std::make_pair(sMoveEnemy, 0))
+                    .Register<GameState::Setup>([&](ECSQuery<CPlayer>& ecsQuery) {
+                        printf("lol\n");
+                    }, 1);
     game.Run();
 
     return EXIT_SUCCESS;
