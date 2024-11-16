@@ -32,9 +32,10 @@ struct SystemFunctionSignature;
 
 // Spécifie les signatures de tes fonctions qui sont possible d'écrire ici
 // Genre si tu veux ajouter un entier après ECSQuery
-template <typename... TComponents>
-struct SystemFunctionSignature<std::function<void(ECSQuery<TComponents...>&)>> {
+template <typename... TComponents, typename... TArgs>
+struct SystemFunctionSignature<std::function<void(ECSQuery<TComponents...>&, TArgs...)>> {
     using TECSQuery = ECSQuery<TComponents...>;
+    using TTupleArgs = std::tuple<TArgs...>;
 };
 
 class Game final {
@@ -49,14 +50,14 @@ class Game final {
    public:
     inline static Game New() { return Game{}; }
 
-    template <GameState TGameState, typename Function>
-    inline Game& Register(Function&& function, int priority) {
+    template <GameState TGameState, typename Function, typename ... TArgs>
+    inline Game& Register(Function&& function, int priority, TArgs&&... args) {
         using TECSQuery = SystemFunctionSignature<decltype(std::function{function})>::TECSQuery;
 
-        auto callback = [=](ECSManager& ecsManager) {
+        auto callback = [&](ECSManager& ecsManager) {
             TECSQuery ecsQuery;
             ecsManager.QueryComponents(ecsQuery);
-            function(ecsQuery);
+            function(ecsQuery, args...);
         };
 
         if constexpr (TGameState == GameState::Setup) {
@@ -79,9 +80,11 @@ class Game final {
         return *this;
     }
 
-    template <GameState TGameState, typename... TFunctions>
-    inline Game& RegisterRange(std::pair<TFunctions, int>&&... functions) {
-        (Register<TGameState>(std::get<TFunctions>(functions), std::get<int>(functions)), ...);
+    template <GameState TGameState>
+    inline Game& RegisterRange(auto&&... tuples) {
+        (std::apply([&](auto&&... tupleArgs) {
+             Register<TGameState>(tupleArgs...);
+             }, tuples), ...);
         return *this;
     }
 

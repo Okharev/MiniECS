@@ -18,28 +18,28 @@ constexpr uint8_t FONT_SIZE = 14;
 constexpr float SCREEN_HEIGHT = 1080.0f;
 constexpr float SCREEN_WIDTH = 1920.0f;
 
-void sSpawnPlayer(ECSQuery<CPlayer>& ecsQuery) {
-    printf("Spawning player\n");
+void sSpawnPlayer(ECSQuery<CPlayer>& ecsQuery, int argument1, int argument2) {
+    printf("Spawning player %i %i\n", argument1, argument2);
 }
 
-void sMovePlayer(ECSQuery<CPlayer>& ecsQuery) {
-    printf("Moving player\n");
+void sMovePlayer(ECSQuery<CPlayer>& ecsQuery, int argument1, int argument2) {
+    printf("Moving player %i %i\n", argument1, argument2);
 }
 
-void sMoveEnemy(ECSQuery<CEnemy> &ecsQuery) {
-    printf("Moving enemy\n");
+void sMoveEnemy(ECSQuery<CEnemy> &ecsQuery, int argument1, int argument2) {
+    printf("Moving enemy %i %i\n", argument1, argument2);
 }
 
-void sCleanResources(ECSQuery<CPlayer> &ecsQuery) {
-    printf("saving game\n");
+void sCleanResources(ECSQuery<CPlayer> &ecsQuery, int argument1, int argument2) {
+    printf("saving game %i %i\n", argument1, argument2);
 }
 
 int main() {
 
     auto game = Game::New()
-                    .Register<GameState::Setup>(sSpawnPlayer, 0)
-                    .Register<GameState::Closing>(sCleanResources, 0)
-                    .RegisterRange<GameState::Running>(std::make_pair(sMovePlayer, 1), std::make_pair(sMoveEnemy, 0))
+                    .Register<GameState::Setup>(sSpawnPlayer, 0, 1337, 1338)
+                    .Register<GameState::Closing>(sCleanResources, 0, 1337, 1338)
+                    .RegisterRange<GameState::Running>(std::make_tuple(sMovePlayer, 1, 1337, 1338), std::make_tuple(sMoveEnemy, 0, 1337, 1338))
                     .Register<GameState::Setup>([&](ECSQuery<CPlayer>& ecsQuery) {
                         printf("lol\n");
                     }, 1);
